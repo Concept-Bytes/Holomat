@@ -1,9 +1,8 @@
-# HandTracking
-Holomat tutorial part 2
+# Calibration
+Holomat tutorial part 2. Video for this project is on my patreon. 
 
-# Camera Calibration
 ## Description
-These python scripts allow you do do the calibration required for the holomat project. They do camera calibration using a charuco board and 4 point calibration using openCV contours.
+These python scripts allow you to do the calibration required for the holomat project. They do camera calibration using a charuco board and 4 point calibration using openCV contours.
 
 ## Installation
 Ensure Python and the necessary libraries are installed:
