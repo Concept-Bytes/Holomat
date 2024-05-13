@@ -17,7 +17,7 @@ cap = cv2.VideoCapture(0)
 
 M = np.load("M.npy")
 
-camera_matrix = np.load("camera_matriz.npy")
+camera_matrix = np.load("camera_matrix.npy")
 dist_coeffs = np.load('dist_coeffs.npy')
 
 width, height = 1920, 1200
