@@ -13,52 +13,58 @@ mp_drawing = mp.solutions.drawing_utils
 
 cap = cv2.VideoCapture(0)
 
-#read in M 
-
-M = np.load("M.npy")
-
-camera_matrix = np.load("camera_matrix.npy")
-dist_coeffs = np.load('dist_coeffs.npy')
+# Read in M and M2 matrices
+M1 = np.load("M1.npy")
 
 width, height = 1920, 1200
 
 while True:
     ret, frame = cap.read()
 
-    # Undistort the frame with camera calibration
-    frame = cv2.undistort(frame, camera_matrix, dist_coeffs)
+    # If the frame was not read, exit
+    if not ret:
+        print("Failed to capture frame")
+        break
 
-    warped_image = cv2.warpPerspective(frame, M (width, height))
+    # Convert to RGB
+    rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-    #convert to rgb
-    rgb_frame = cv2.cvtColor(warped_image, cv2.COLOR_BGR2RGB)
-
-    #Run inference for hand detection
+    # Run inference for hand detection
     results = hands.process(rgb_frame)
 
-    warped_image = np.zeros((width, height, 3), np.uint8)
+    # Create an empty image to draw on
+    output_image = np.zeros((height, width, 3), np.uint8)
 
     if results.multi_hand_landmarks:
         for hand_landmarks in results.multi_hand_landmarks:
-            mp_drawing.draw_landmarks(warped_image, hand_landmarks, mp.hands.HAND_CONNECTIONS)
+            # Extract landmark coordinates
+            landmark_coords = []
+            for landmark in hand_landmarks.landmark:
+                x = int(landmark.x * frame.shape[1])
+                y = int(landmark.y * frame.shape[0])
+                landmark_coords.append([x, y])
+            
+            landmark_coords = np.array(landmark_coords, dtype=np.float32)
+            print(f"Original Landmark Coordinates: {landmark_coords}")
 
-    #rotate the image 180
-    warped_image = cv2.rotate(warped_image, cv2.ROTATE_180)
+            # Apply M1 transformation to landmark coordinates
+            transformed_coords = cv2.perspectiveTransform(np.array([landmark_coords]), M1)[0]
+            print(f"Transformed Landmark Coordinates: {transformed_coords}")
 
+            # Draw landmarks on the output image
+            for i, (x, y) in enumerate(transformed_coords):
+                cv2.circle(output_image, (int(x), int(y)), 5, (0, 255, 0), -1)
+                cv2.putText(output_image, f'ID:{i}', (int(x), int(y)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+    
+
+    # Display the final image
     cv2.namedWindow("Final Image", cv2.WND_PROP_FULLSCREEN)
-    cv2.setWINDPROPERTY("Final Image", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
-    cv2.imshow("Final Image", warped_image)
-    cv2.waitKey(1)
+    cv2.setWindowProperty("Final Image", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+    cv2.imshow("Final Image", output_image)
 
-    
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
 
-
-
-    
-
-
-
-
-
-
+cap.release()
+cv2.destroyAllWindows()
 
