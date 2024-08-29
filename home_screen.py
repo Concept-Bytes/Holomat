@@ -5,14 +5,18 @@ import os
 import sys
 import math
 from camera_manager import CameraManager
-import apps.app_2
-import apps.app_4
-import apps.app_5
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
 # Initialize Pygame
 pygame.init()
 # Initialize the mixer
 mixer.init()
-SCREEN_SIZE = (1920, 1200)
+SCREEN_WIDTH = int(os.getenv('SCREEN_WIDTH'))
+SCREEN_HEIGHT = int(os.getenv('SCREEN_HEIGHT'))
+SCREEN_SIZE = (SCREEN_WIDTH, SCREEN_HEIGHT)
 NAVY_BLUE = (20, 20, 40)
 LIGHT_BLUE = (173, 216, 230)
 HOME_TOGGLE_DELAY = 1.0  # Delay in seconds for home button toggle
@@ -37,11 +41,9 @@ class AppCircle:
         self.is_animating = False
         self.image = self.load_image()
 
-    
-
     def load_image(self):
         if not self.is_main:
-            image_path = f'./resources/app_{self.app_index}.jpg'
+            image_path = f'./apps/app_{self.app_index}/app_{self.app_index}.jpg'
             if os.path.exists(image_path):
                 image = pygame.image.load(image_path)
                 return pygame.transform.scale(image, (2 * self.radius, 2 * self.radius))
@@ -162,7 +164,7 @@ def run_home_screen(screen, camera_manager):
                             if time.time() > last_app_select_time:
                                 print(f"Circle {circle.app_index} hovered with visibility {circle.visible}")
                                 try:
-                                    app = f'app_{circle.app_index}'
+                                    app = f'app_{circle.app_index}.app_{circle.app_index}'
                                     print(f"Launching app: {app}")
                                     mod = __import__(f'apps.{app}', fromlist=[''])
                                     play_sound("./audio/confirmation.wav")
@@ -183,8 +185,10 @@ def run_home_screen(screen, camera_manager):
         pygame.time.delay(50)
 
 if __name__ == '__main__':
+    SCREEN_WIDTH = int(os.getenv('SCREEN_WIDTH'))
+    SCREEN_HEIGHT = int(os.getenv('SCREEN_HEIGHT'))
     os.environ['SDL_VIDEO_WINDOW_POS'] = '-3440,0'
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     pygame.display.set_caption('Home Screen')
-    camera_manager = CameraManager('./M.npy', 1920, 1200)
+    camera_manager = CameraManager('./M.npy', SCREEN_WIDTH, SCREEN_HEIGHT)
     run_home_screen(screen, camera_manager)
