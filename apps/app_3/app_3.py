@@ -5,6 +5,7 @@ import pygame
 from pygame import mixer
 import sys
 import math
+import time
 
 from dotenv import load_dotenv
 import os
@@ -320,23 +321,30 @@ def brick_breaker(screen, camera_manager, SCREEN_SIZE):
         pygame.time.delay(10)
 
 PINCH_THRESHOLD = 40
+HOVER_DELAY = 1.0  # Time in seconds to trigger action on hover
 
 def distance(p1, p2):
     return math.sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
 
-def is_pinch(thumb_pos, index_pos):
-    return distance(thumb_pos, index_pos) < PINCH_THRESHOLD
+def is_hover(pos, button_center, radius):
+    return (pos[0] - button_center[0])**2 + (pos[1] - button_center[1])**2 <= radius**2
 
 def run(screen, camera_manager):
     running = True
-
     circle_radius = 100
     space_invaders_button_center = (SCREEN_SIZE[0] // 3, SCREEN_SIZE[1] // 2)
     brick_breaker_button_center = (2 * SCREEN_SIZE[0] // 3, SCREEN_SIZE[1] // 2)
     home_button_center = (50 + circle_radius, SCREEN_SIZE[1] - 50 - circle_radius)
 
-    font = pygame.font.Font(None, 36)
-    large_font = pygame.font.Font(None, 72)
+    # Load images for buttons
+    space_invaders_img = pygame.image.load('./apps/app_3/space_invaders.jpg')
+    space_invaders_img = pygame.transform.scale(space_invaders_img, (2 * circle_radius, 2 * circle_radius))
+
+    brick_breaker_img = pygame.image.load('./apps/app_3/brick_breaker.jpg')
+    brick_breaker_img = pygame.transform.scale(brick_breaker_img, (2 * circle_radius, 2 * circle_radius))
+
+    # Hover tracking
+    hover_start_time = { 'space_invaders': 0, 'brick_breaker': 0, 'home': 0 }
 
     while running:
         if not camera_manager.update():
@@ -345,42 +353,58 @@ def run(screen, camera_manager):
         transformed_landmarks = camera_manager.get_transformed_landmarks()
         if transformed_landmarks:
             for hand_landmarks in transformed_landmarks:
-                thumb_pos = (int(hand_landmarks[4][0]), int(hand_landmarks[4][1]))  
-                index_pos = (int(hand_landmarks[8][0]), int(hand_landmarks[8][1]))  
+                index_pos = (int(hand_landmarks[8][0]), int(hand_landmarks[8][1]))  # Index finger tip position
 
-                if is_pinch(thumb_pos, index_pos):
-                    if (index_pos[0] - space_invaders_button_center[0])**2 + (index_pos[1] - space_invaders_button_center[1])**2 <= circle_radius**2:
+                # Check if hovering over space invaders button
+                if is_hover(index_pos, space_invaders_button_center, circle_radius):
+                    if hover_start_time['space_invaders'] == 0:
+                        hover_start_time['space_invaders'] = time.time()
+                    elif time.time() - hover_start_time['space_invaders'] >= HOVER_DELAY:
                         play_sound('./apps/app_3/game_start.mp3')
                         space_invaders(screen, camera_manager, SCREEN_SIZE)  
                         return
-                    elif (index_pos[0] - brick_breaker_button_center[0])**2 + (index_pos[1] - brick_breaker_button_center[1])**2 <= circle_radius**2:
+                else:
+                    hover_start_time['space_invaders'] = 0
+
+                # Check if hovering over brick breaker button
+                if is_hover(index_pos, brick_breaker_button_center, circle_radius):
+                    if hover_start_time['brick_breaker'] == 0:
+                        hover_start_time['brick_breaker'] = time.time()
+                    elif time.time() - hover_start_time['brick_breaker'] >= HOVER_DELAY:
                         play_sound('./apps/app_3/game_start.mp3')
                         brick_breaker(screen, camera_manager, SCREEN_SIZE)
                         return
-                    elif (index_pos[0] - home_button_center[0])**2 + (index_pos[1] - home_button_center[1])**2 <= circle_radius**2:
+                else:
+                    hover_start_time['brick_breaker'] = 0
+
+                # Check if hovering over home button
+                if is_hover(index_pos, home_button_center, circle_radius):
+                    if hover_start_time['home'] == 0:
+                        hover_start_time['home'] = time.time()
+                    elif time.time() - hover_start_time['home'] >= HOVER_DELAY:
                         play_sound('audio/back.wav')
                         running = False
+                else:
+                    hover_start_time['home'] = 0
 
         screen.fill(BLACK)
 
-        pygame.draw.circle(screen, NAVY_BLUE, space_invaders_button_center, circle_radius)
-        pygame.draw.circle(screen, LIGHT_BLUE, space_invaders_button_center, circle_radius, 5)
-        text_surface = font.render('Space Invaders', True, WHITE)
-        text_rect = text_surface.get_rect(center=space_invaders_button_center)
-        screen.blit(text_surface, text_rect)
+        # Draw Space Invaders button with white circle overlay
+        screen.blit(space_invaders_img, (space_invaders_button_center[0] - circle_radius, 
+                                        space_invaders_button_center[1] - circle_radius))
+        pygame.draw.circle(screen, WHITE, space_invaders_button_center, circle_radius, 5)  # White overlay circle
 
-        pygame.draw.circle(screen, NAVY_BLUE, brick_breaker_button_center, circle_radius)
-        pygame.draw.circle(screen, LIGHT_BLUE, brick_breaker_button_center, circle_radius, 5)
-        text_surface = font.render('Brick Breaker', True, WHITE)
-        text_rect = text_surface.get_rect(center=brick_breaker_button_center)
-        screen.blit(text_surface, text_rect)
+        # Draw Brick Breaker button with white circle overlay
+        screen.blit(brick_breaker_img, (brick_breaker_button_center[0] - circle_radius, 
+                                        brick_breaker_button_center[1] - circle_radius))
+        pygame.draw.circle(screen, WHITE, brick_breaker_button_center, circle_radius, 5)  # White overlay circle
 
+        # Draw Home button with text and white circle overlay
         pygame.draw.circle(screen, NAVY_BLUE, home_button_center, circle_radius)
-        pygame.draw.circle(screen, LIGHT_BLUE, home_button_center, circle_radius, 5)
+        pygame.draw.circle(screen, WHITE, home_button_center, circle_radius, 5)  # White overlay circle
+        font = pygame.font.Font(None, 36)
         text_surface = font.render('Home', True, WHITE)
         text_rect = text_surface.get_rect(center=home_button_center)
         screen.blit(text_surface, text_rect)
-
         pygame.display.flip()
         pygame.time.delay(50)
-
