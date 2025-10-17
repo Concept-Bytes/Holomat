@@ -1,0 +1,17 @@
+# Core dependencies
+opencv-python>=4.8.0
+opencv-contrib-python>=4.8.0
+mediapipe>=0.10.0
+numpy>=1.21.0
+pygame>=2.5.0
+python-dotenv>=1.0.0
+
+# Optional dependencies (used in some features)
+pyautogui>=0.9.53  # For some system interactions
+requests>=2.31.0    # For API calls (weather, stocks, etc.)
+spotipy>=2.23.0     # For Spotify integration
+
+# Development dependencies (not required for running)
+pip>=21.0.0
+setuptools>=58.0.0
+wheel>=0.37.0
